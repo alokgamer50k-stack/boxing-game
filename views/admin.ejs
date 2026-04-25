@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel | Aura Store</title>
+    <style>
+        body { background: #050505; color: white; font-family: sans-serif; display: flex; justify-content: center; padding-top: 50px; }
+        .form-box { background: #111; padding: 30px; border-radius: 15px; border: 1px solid #00f2fe; width: 350px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; background: #222; border: 1px solid #333; color: white; border-radius: 8px; }
+        button { width: 100%; padding: 12px; background: #00f2fe; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="form-box">
+        <h2 style="color:#00f2fe">Add New Asset</h2>
+        <form action="/add-item" method="POST">
+            <input type="text" name="title" placeholder="Asset Name (e.g. OB53 Mod)" required>
+            <input type="text" name="price" placeholder="Price (e.g. 5.00)" required>
+            <input type="text" name="img" placeholder="Image URL" required>
+            <button type="submit">UPLOAD TO STORE</button>
+        </form>
+        <br>
+        <button onclick="window.location.href='/'" style="background:#333; color:white">BACK TO STORE</button>
+    </div>
+</body>
+</html>
