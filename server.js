@@ -1,31 +1,37 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
-const path = require('path');
 
-app.set('view engine', 'ejs');
-app.use(express.static('public'));
+// 🔓 Sabse Important: Ye har jagah se request allow karega
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST']
+}));
+
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// 🛒 Items Data (Isse tu Admin Panel se badal sakta hai)
-let products = [
-    { id: 1, title: "OB53 VIP INJECTOR", price: "5.45", img: "https://via.placeholder.com/400x200" }
+let storeData = [
+    { title: "Elite Headshot v1", price: "5.00", link: "https://t.me/.." }
 ];
 
+// Home page par ek message (Checking ke liye)
 app.get('/', (req, res) => {
-    res.render('index', { products });
+    res.send("<h1>Backend Brain is Online!</h1><p>Try /api/items to see data.</p>");
 });
 
-// Admin Panel Access
-app.get('/admin', (req, res) => {
-    res.render('admin');
+app.get('/api/items', (req, res) => {
+    res.json(storeData);
 });
 
-app.post('/add-item', (req, res) => {
-    const { title, price, img } = req.body;
-    products.push({ id: Date.now(), title, price, img });
-    res.redirect('/');
+app.post('/api/add', (req, res) => {
+    const { title, price, link, password } = req.body;
+    if(password === "alok123") {
+        storeData.push({ title, price, link });
+        res.json({ success: true });
+    } else {
+        res.json({ success: false, message: "Wrong Password" });
+    }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Aura Store Live: http://localhost:${PORT}`));
+app.listen(PORT, () => console.log("Server Active!"));
