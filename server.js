@@ -1,33 +1,31 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const app = express();
-require('dotenv').config();
+const path = require('path');
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// 🔗 DATABASE CONNECTION (MongoDB Atlas use karenge)
-// Yahan tum apna MongoDB URL daloge baad mein
-const dbURI = process.env.MONGO_URI || "your_mongodb_connection_string";
-
+// 🛒 Items Data (Isse tu Admin Panel se badal sakta hai)
 let products = [
-    { title: "V-Badge Elite", price: "5.00", img: "https://i.ibb.co/example.jpg" }
+    { id: 1, title: "OB53 VIP INJECTOR", price: "5.45", img: "https://via.placeholder.com/400x200" }
 ];
 
 app.get('/', (req, res) => {
     res.render('index', { products });
 });
 
-// Admin Login Logic
-app.post('/admin-login', (req, res) => {
-    const { user, pass } = req.body;
-    if(user === "admin" && pass === "alok123") {
-        res.json({ success: true });
-    } else {
-        res.json({ success: false });
-    }
+// Admin Panel Access
+app.get('/admin', (req, res) => {
+    res.render('admin');
+});
+
+app.post('/add-item', (req, res) => {
+    const { title, price, img } = req.body;
+    products.push({ id: Date.now(), title, price, img });
+    res.redirect('/');
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Aura Store Live on ${PORT}`));
+app.listen(PORT, () => console.log(`Aura Store Live: http://localhost:${PORT}`));
