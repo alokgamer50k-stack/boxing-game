@@ -6,6 +6,8 @@ from flask_cors import CORS
 import datetime
 import os
 import json
+import random
+import string
 
 app = Flask(__name__)
 CORS(app)
@@ -13,10 +15,10 @@ CORS(app)
 DATA_FILE = "database.json"
 
 def load_db():
-    if not os.path.exists(DATA_FILE): return {"products": []}
+    if not os.path.exists(DATA_FILE): return {"products": [], "subscriptions": []}
     try:
         with open(DATA_FILE, "r") as f: return json.load(f)
-    except: return {"products": []}
+    except: return {"products": [], "subscriptions": []}
 
 def save_db(data):
     try:
@@ -26,7 +28,7 @@ def save_db(data):
 GMAIL_ID = os.environ.get("GMAIL_ID", "kagarol505@gmail.com")
 GMAIL_APP_PASS = os.environ.get("GMAIL_PASS", "nnywmitezfqwqiq")
 
-# --- CUSTOM TIMER LOGIC ---
+# --- CUSTOM TIMER LOGIC (Fixed for Admin Inputs) ---
 def parse_num(val):
     val = str(val).lower().replace(' ', '')
     if 'k' in val: return float(val.replace('k', '')) * 1000
@@ -51,22 +53,60 @@ def calc_stats(iso_time, duration_hrs, tv, tl, tb):
     except: dur = 24.0
     if dur <= 0: dur = 1.0
 
-    # Timer Progress Ratio
     ratio = hrs_passed / dur
-    if ratio > 1.0: ratio = 1.0 # Target reached
+    if ratio > 1.0: ratio = 1.0 
 
+    # Exact numbers based on admin input
     v = int(parse_num(tv) * ratio)
     l = int(parse_num(tl) * ratio)
     b = int(parse_num(tb) * ratio)
 
-    # Start se thoda number dikhe isliye 1 minimum
     if v < 1 and parse_num(tv) > 0: v = 1
     return format_num(v), format_num(l), format_num(b)
 
 @app.route('/')
 def home():
-    return "<h1>API Live! (No Login, Custom Timer Logic Active) 🚀</h1>"
+    return "<h1>API Live! (Subscriptions & Custom Timer Logic Active) 🚀</h1>"
 
+# --- SUBSCRIPTION SYSTEM ---
+def generate_sub_code():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+@app.route('/api/verify-sub', methods=['POST', 'OPTIONS'])
+def verify_sub():
+    if request.method == 'OPTIONS': return jsonify({"success": True}), 200
+    db = load_db()
+    code = request.json.get("code", "").upper()
+    
+    # Check if code exists and is valid
+    for sub in db.get("subscriptions", []):
+        if sub["code"] == code:
+            exp_date = datetime.datetime.fromisoformat(sub["expires"])
+            if datetime.datetime.now(datetime.timezone.utc) < exp_date:
+                return jsonify({"success": True, "plan": sub["plan"]})
+            else:
+                return jsonify({"success": False, "message": "Subscription Expired!"})
+    
+    return jsonify({"success": False, "message": "Invalid Code!"})
+
+@app.route('/api/create-sub', methods=['POST', 'OPTIONS'])
+def create_sub():
+    if request.method == 'OPTIONS': return jsonify({"success": True}), 200
+    db = load_db()
+    data = request.json
+    plan = data.get("plan")
+    
+    days = 30 if plan == "1M" else 180 if plan == "6M" else 365
+    exp_date = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)
+    
+    new_code = generate_sub_code()
+    if "subscriptions" not in db: db["subscriptions"] = []
+    db["subscriptions"].append({"code": new_code, "plan": plan, "expires": exp_date.isoformat()})
+    save_db(db)
+    
+    return jsonify({"success": True, "code": new_code})
+
+# --- PRODUCTS SYSTEM ---
 @app.route('/api/products', methods=['GET', 'POST'])
 def products():
     db = load_db()
@@ -80,7 +120,6 @@ def products():
     
     res = []
     for p in db["products"]:
-        # Admin ke values lo (warna default 10k, 1k, 500)
         v, l, b = calc_stats(p.get("upload_time", datetime.datetime.now(datetime.timezone.utc).isoformat()), 
                              p.get("duration", 24), p.get("t_views", "10k"), p.get("t_likes", "1k"), p.get("t_buys", "500"))
         pc = p.copy()
@@ -129,4 +168,4 @@ def check_payment():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
-    
+                
